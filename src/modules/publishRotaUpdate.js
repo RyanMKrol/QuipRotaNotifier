@@ -27,23 +27,29 @@ export default async function publishRotaUpdate(
     .then((json) => {
       const $ = cheerio.load(json.html);
 
-      const rotaData = $('table tr').map((i, elem) => {
-        const date = $(elem).find('span').eq(0).text();
-        const assignee = $(elem).find('span').eq(1).text();
+      const rotaData = $('table tr')
+        .map((i, elem) => {
+          const date = $(elem)
+            .find('span')
+            .eq(0)
+            .text();
+          const assignee = $(elem)
+            .find('span')
+            .eq(1)
+            .text();
 
-        return validateDate(date) ? {
-          date: new Date(date),
-          assignee,
-        } : undefined;
-      }).get();
+          return validateDate(date)
+            ? {
+              date: new Date(date),
+              assignee,
+            }
+            : undefined;
+        })
+        .get();
 
       const todayRotaData = rotaData.filter((x) => isDateToday(x.date));
 
-      if (todayRotaData.length !== 1) {
-        postSlack(slackWebhookUrl, {
-          content: `\nRota - ${rotaName}\nMessage - Could not parse rota today, please check manually.`,
-        });
-      } else {
+      if (todayRotaData.length === 1) {
         postSlack(slackWebhookUrl, {
           content: `\nRota - ${rotaName}\nMessage - ${todayRotaData[0].assignee}, You are today's rota person!`,
         });
@@ -89,7 +95,9 @@ function validateDate(val) {
 function isDateToday(comparingDate) {
   const todayDate = new Date();
 
-  return todayDate.getFullYear() === comparingDate.getFullYear()
+  return (
+    todayDate.getFullYear() === comparingDate.getFullYear()
     && todayDate.getMonth() === comparingDate.getMonth()
-    && todayDate.getDate() === comparingDate.getDate();
+    && todayDate.getDate() === comparingDate.getDate()
+  );
 }
