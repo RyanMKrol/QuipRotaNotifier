@@ -24,7 +24,7 @@ export default async function publishRotaUpdate(
     },
   })
     .then((res) => res.json())
-    .then((json) => {
+    .then(async (json) => {
       const $ = cheerio.load(json.html);
 
       const rotaData = $('table tr')
@@ -48,10 +48,14 @@ export default async function publishRotaUpdate(
         .get();
 
       const todayRotaData = rotaData.filter((x) => isDateToday(x.date));
+      const tomorrowRotaData = rotaData.filter((x) => isDateTomorrow(x.date));
 
       if (todayRotaData.length === 1) {
-        postSlack(slackWebhookUrl, {
-          content: `\nRota - ${rotaName}\nMessage - ${todayRotaData[0].assignee}, You are today's rota person!`,
+        const message = tomorrowRotaData.length === 1
+          ? `\nRota: ${rotaName}\nToday - ${todayRotaData[0].assignee}\nTomorrow - ${tomorrowRotaData[0].assignee}`
+          : `\nRota: ${rotaName}\nToday - ${todayRotaData[0].assignee}\n`;
+        await postSlack(slackWebhookUrl, {
+          content: message,
         });
       }
     });
@@ -99,5 +103,22 @@ function isDateToday(comparingDate) {
     todayDate.getFullYear() === comparingDate.getFullYear()
     && todayDate.getMonth() === comparingDate.getMonth()
     && todayDate.getDate() === comparingDate.getDate()
+  );
+}
+
+/**
+ * Method to check if the date we've read is tomorrow or not
+ *
+ * @param {Date} comparingDate The date we're comparing to
+ *
+ * @returns {boolean} Whether today is the date we're comparing or not
+ */
+function isDateTomorrow(comparingDate) {
+  const todayDate = new Date();
+
+  return (
+    todayDate.getFullYear() === comparingDate.getFullYear()
+    && todayDate.getMonth() === comparingDate.getMonth()
+    && todayDate.getDate() + 1 === comparingDate.getDate()
   );
 }
